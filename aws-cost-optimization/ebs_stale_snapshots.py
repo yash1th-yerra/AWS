@@ -1,7 +1,13 @@
+import json
 import boto3
+from datetime import datetime, timedelta
 
 def lambda_handler(event, context):
     ec2 = boto3.client('ec2')
+
+    # Get the current date and calculate the threshold date for 3 months
+    current_date = datetime.utcnow()
+    three_months_ago = current_date - timedelta(days=90)
 
     # Get all EBS snapshots
     response = ec2.describe_snapshots(OwnerIds=['self'])
@@ -19,6 +25,19 @@ def lambda_handler(event, context):
         snapshot_id = snapshot['SnapshotId']
         volume_id = snapshot.get('VolumeId')
 
+        # uncomment the below conditional delete if snapshot is used for backup purpose
+        # this will ensure the deletion only if it is not used for certain time period.
+
+        # ---------------------------------------------
+        # snapshot_start_time = snapshot['StartTime']
+
+
+        # Check if the snapshot is older than 3 months
+        #if snapshot_start_time >= three_months_ago:
+          #  print(f"Skipping snapshot {snapshot_id} as it is not older than 3 months.")
+            #continue
+        # ----------------------------------------------------
+        
         if not volume_id:
             # Delete the snapshot if it's not attached to any volume
             ec2.delete_snapshot(SnapshotId=snapshot_id)
